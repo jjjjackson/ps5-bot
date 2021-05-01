@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "fmt"
 	"fmt"
 	"log"
 
@@ -13,14 +12,19 @@ import (
 	"github.com/jjjjackson/ps5-bot/config"
 )
 
-var TARGET_URL = "https://www.amazon.co.jp/%E3%82%BD%E3%83%8B%E3%83%BC%E3%83%BB%E3%82%A4%E3%83%B3%E3%82%BF%E3%83%A9%E3%82%AF%E3%83%86%E3%82%A3%E3%83%96%E3%82%A8%E3%83%B3%E3%82%BF%E3%83%86%E3%82%A4%E3%83%B3%E3%83%A1%E3%83%B3%E3%83%88-PlayStation-5-CFI-1000A01/dp/B08GGGBKRQ/ref=sr_1_1?dchild=1&keywords=playstation+5&qid=1617209269&sr=8-1"
+var TARGET_URL = []string{
+	"https://www.amazon.co.jp/dp/B08GGGBKRQ/ref=cm_sw_r_oth_api_glt_i_WYS1X7GWPSY386FSVN65",
+	"https://www.amazon.co.jp/dp/B08GGGCH3Y/ref=cm_sw_r_oth_api_glt_i_SXG07XY44Y5BX9PZ8Q2M",
+	"https://www.amazon.co.jp/dp/B091D2HGKP/ref=cm_sw_r_oth_api_glt_i_JNPERGZM9BE65XCY7J0X",
+	"https://www.amazon.co.jp/dp/B091D2959B/ref=cm_sw_r_oth_api_glt_i_K18C0CRF8PYNFQZZP5V5",
+}
 
-func isPS5InStock() bool {
+func isPS5InStock(url string) bool {
 	log.Printf("run isPS5InStock")
 
 	c := colly.NewCollector()
 
-	if err := c.Visit(TARGET_URL); err != nil {
+	if err := c.Visit(url); err != nil {
 		log.Fatal("Couldn't visit amazon")
 	}
 
@@ -43,26 +47,24 @@ func sendTelegramMessage(config *config.Config) {
 		log.Fatal("Couldn't new bot")
 	}
 
-	status := isPS5InStock()
-	txt := fmt.Sprintf("PS5 In stock : \n %s", TARGET_URL)
-	if !status {
-		txt = fmt.Sprintf("PS5 Not In stock \n")
-	}
+	for _, url := range TARGET_URL {
+		status := isPS5InStock(url)
+		txt := fmt.Sprintf("PS5 In stock : \n %s", TARGET_URL)
 
-	mid, err := strconv.ParseInt(config.MessageID, 10, 64)
-	if err != nil {
-		log.Fatal("Couldn't parse message ID")
-	}
+		mid, err := strconv.ParseInt(config.MessageID, 10, 64)
+		if err != nil {
+			log.Fatal("Couldn't parse message ID")
+		}
 
-	msg := tgbot.NewMessage(mid, txt)
-	_, err = bot.Send(msg)
-	if err != nil {
-		log.Fatal("Couldn't send message")
-	}
-}
+		msg := tgbot.NewMessage(mid, txt)
 
-func printConfig(config *config.Config) {
-	log.Println(config.MessageID)
+		if status {
+			if _, err := bot.Send(msg); err != nil {
+				log.Fatal("Couldn't send message")
+			}
+		}
+
+	}
 }
 
 func handleLambdaStart() {
